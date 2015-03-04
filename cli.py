@@ -1,7 +1,7 @@
 from timesheet import TimesheetArchive, Timesheet, Entry
 import click
 from click import echo
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -30,19 +30,18 @@ def add_new_sheet():
         archive = TimesheetArchive()
         session.add(archive)
 
-    res = session.query(Timesheet).filter(Timesheet.created_date==datetime.now().strftime('%m/%d/%y')).count()
-    if res > 0:
-        print 'yes'
-    # count = 0
-    # for sheet in sheets:
-    #     if sheet.created_date.now().strftime('%m/%d/%y') == datetime.now().strftime('%m/%d/%y'):
-    #         count += 1
-    #
-    # if count > 0:
-    #     print 'Sigh...You already created a timesheet today...'
-    # else:
-    #     archive.timesheets.append(Timesheet())
-    #     session.commit()
+    res = session.query(Timesheet).filter(
+            datetime.now() - Timesheet.created_date < timedelta(days=1))
+
+    if sheets:
+        if res:
+            print 'Sigh...You already created a timesheet today...'
+        else:
+            archive.timesheets.append(Timesheet())
+            session.commit()
+    else:
+        archive.timesheets.append(Timesheet())
+        session.commit()
 
 
 def list_all_sheets():
@@ -61,12 +60,18 @@ def list_all_sheets():
 
 
 def check_in(current_time=datetime.now()):
-    sheets = session.query(Timesheet).all()
-    count = 0
-    for sheet in sheets:
-        if sheet.created_date.now().strftime('%m/%d/%y') == datetime.now().strftime('%m/%d/%y'):
-            sheet.entries.append(Entry(checkin_time=current_time))
-            session.commit()
+
+    res = session.query(Timesheet).filter(
+            datetime.now() - Timesheet.created_date < timedelta(days=1))
+    if res:
+        res.entries.append(Entry(checkin_time=current_time))
+        session.commit()
+    else:
+        archive = session.query(TimesheetArchive).filter(TimesheetArchive.name=='archive').first()
+        sheet = Timesheet()
+        archive.timesheets.append(sheet)
+        sheet.entries.append(Entry(checkin_time=current_time))
+        session.commit()
 
 
 
