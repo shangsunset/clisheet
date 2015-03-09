@@ -1,5 +1,5 @@
 import time
-from datetime import datetime
+from datetime import datetime, date
 from sqlalchemy import *
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, backref
@@ -15,7 +15,7 @@ class TimesheetArchive(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String, default='archive')
-    created_date = Column(DateTime, default=datetime.now)
+    created_date = Column(Date, default=date.today)
 
 
 class Timesheet(Base):
@@ -23,7 +23,7 @@ class Timesheet(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String, default='untitled')
-    created_date = Column(DateTime, nullable=False, default=datetime.now)
+    created_date = Column(Date, nullable=False, default=date.today)
     total_hours = Column(Integer, default=0)
 
     timesheet_archive_id = Column(Integer, ForeignKey('timesheet_archive.id'))
@@ -36,9 +36,9 @@ class Entry(Base):
     __tablename__ = 'entry'
 
     id = Column(Integer, primary_key=True)
-    date = Column(DateTime, default=datetime.now)
+    date = Column(Date, default=date.today)
     checkin_time = Column(DateTime)
-    checkout_time = Column(DateTime, nullable=True, default='')
+    checkout_time = Column(DateTime, nullable=True)
     task = Column(String, nullable=True)
     hours = Column(Integer, nullable=True, default=0)
     timesheet_id = Column(Integer, ForeignKey('timesheet.id'))

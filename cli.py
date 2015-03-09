@@ -1,7 +1,7 @@
 from timesheet import TimesheetArchive, Timesheet, Entry
 import click
 from click import echo
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -76,14 +76,14 @@ def sheet(id):
 def new():
     """Add a new timesheet."""
 
-    # sheets = session.query(Timesheet).all()
-    res = session.query(Timesheet).filter(Timesheet.created_date>=datetime.now() - timedelta(hours=12)).count()
+    #filter: sheet created less than a day to current time.
+    res = session.query(Timesheet).filter(Timesheet.created_date==date.today())
 
-    if res > 0:
-        print res
-        print 'Sigh...You already created a timesheet today...'
+    if res:
+        print 'You just created a timesheet today...'
     else:
-        archive.timesheets.append(Timesheet())
+        new = Timesheet()
+        archive.timesheets.append(new)
     session.commit()
 
 
@@ -104,15 +104,15 @@ def ls():
 
 
 @cli.command()
-def checkin(current_time=datetime.now()):
+def cin(current_time=datetime.now()):
     """Checking in"""
 
     res = session.query(Timesheet).filter(
-            Timesheet.created_date >= datetime.now() - timedelta(hours=12))\
+            Timesheet.created_date==date.today())\
                     .order_by(Timesheet.id.desc()).first()
     if res:
         entry = session.query(Entry).filter(
-                Entry.date >= datetime.now() - timedelta(hours=12))\
+                Entry.date == date.today())\
                 .order_by(Entry.id.desc()).first()
 
         #if checked in but havent checked out
@@ -136,10 +136,11 @@ def checkin(current_time=datetime.now()):
 
 
 @cli.command()
-def checkout(current_time=datetime.now()):
+def cout(current_time=datetime.now()):
     """Checking out"""
-    entry = session.query(Entry).filter(
-            datetime.now() - Entry.date < timedelta(days=1)).first()
+    entry = session.query(Entry).filter(Entry.date == date.today())\
+            .order_by(Entry.id.desc()).first()
+
     if entry:
         entry.checkout_time = current_time
         entry.hours = ((entry.checkout_time - entry.checkin_time).seconds)/(60*60)
