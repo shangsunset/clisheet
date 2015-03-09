@@ -11,59 +11,85 @@ Session = sessionmaker(bind=engine)
 session = Session()
 
 
-@click.command()
-@click.option('--sheet', '-s', multiple=True, default=1,
-                help='display a timesheet. take timesheet id as parameter.')
-@click.argument('arg', required=False)
-def main(arg, sheet):
+archive = session.query(TimesheetArchive).filter(TimesheetArchive.name=='archive').first()
+if not archive:
+    archive = TimesheetArchive()
+    session.add(archive)
 
-    archive = session.query(TimesheetArchive).filter(TimesheetArchive.name=='archive').first()
-    if not archive:
-        archive = TimesheetArchive()
-        session.add(archive)
-        session.commit()
 
-    if arg == 'new':
-        add_new_sheet(archive)
-    if arg == 'ls':
-        list_all_sheets(archive)
-    if arg == 'in':
-        check_in(archive)
-    if arg == 'out':
-        check_out()
 
-    show_sheet(sheet)
+@click.group()
+def cli():
+    pass
+
 
 
 #TODO
-def show_sheet(sheet_id):
+@cli.command()
+@click.argument('id', type=int, required=False)
+def sheet(id):
+    """Display a timesheet.Take timesheet id as parameter.'"""
     # sheets_count = session.query(Timesheet).count()
-    sheet = session.query(Timesheet).get(sheet_id)
-    if sheet:
-        print 'showing %s' % sheet.name
-
+    if id:
+        sheet = session.query(Timesheet).get(id)
+        print '+---------------------------------------------------------------------------------------+'
+        print
+        print '|\tName : ' + sheet.name + '\t|\tCreated Date : ' +\
+                sheet.created_date.strftime('%m/%d/%y') + ' \t|\tTotal Hour: ' +\
+                str(sheet.total_hours) + '\t|'
+        print
+        print '+---------------------------------------------------------------------------------------+'
+        entries = session.query(Entry).filter(Entry.timesheet_id==sheet.id)
+        print '|\tDate\t|\tCheck In Time\t|\tCheck Out Time\t|\tHours|'
+        for entry in entries:
+            print '|\t' + entry.date.strftime('%m/%d/%y') + '\t|\t' +\
+                    entry.checkin_time.strftime('%H:%M:%S') + \
+            '\t|\t' + entry.checkout_time.strftime('%H:%M:%S') + '\t|\t' +\
+            str(entry.hours) + '\t|'
     else:
-        print 'The sheet you are looking for doesnt exist'
+        latest = session.query(Timesheet).order_by(Timesheet.id.desc()).first()
+
+        print '+---------------------------------------------------------------------------------------+'
+        print
+        print '|\tName : ' + latest.name + '\t|\tCreated Date : ' +\
+                latest.created_date.strftime('%m/%d/%y') + ' \t|\tTotal Hour: ' +\
+                str(latest.total_hours) + '\t|'
+        print
+        print '+---------------------------------------------------------------------------------------+'
+        entries = session.query(Entry).filter(Entry.timesheet_id==latest.id)
+        print '|\tDate\t|\tCheck In Time\t|\tCheck Out Time\t|\tHours|'
+        for entry in entries:
+            print '|\t' + entry.date.strftime('%m/%d/%y') + '\t|\t' +\
+                    entry.checkin_time.strftime('%H:%M:%S') + \
+            '\t|\t' + entry.checkout_time.strftime('%H:%M:%S') + '\t|\t' +\
+            str(entry.hours) + '\t|'
 
 
-def add_new_sheet(archive):
-    sheets = session.query(Timesheet).all()
 
-    res = session.query(Timesheet).filter(
-            datetime.now() - Timesheet.created_date < timedelta(days=1))
 
-    if sheets:
-        if res:
-            print 'Sigh...You already created a timesheet today...'
-        else:
-            archive.timesheets.append(Timesheet())
+    # print 'The sheet you are looking for doesnt exist'
+
+
+
+
+@cli.command()
+def new():
+    """Add a new timesheet."""
+
+    # sheets = session.query(Timesheet).all()
+    res = session.query(Timesheet).filter(Timesheet.created_date>=datetime.now() - timedelta(hours=12)).count()
+
+    if res > 0:
+        print res
+        print 'Sigh...You already created a timesheet today...'
     else:
         archive.timesheets.append(Timesheet())
-
     session.commit()
 
 
-def list_all_sheets(archive):
+@cli.command()
+def ls():
+    """List all the timesheets."""
     res = session.query(Timesheet).all()
     if res:
         print '+---------------------------------------------------------------+'
@@ -77,22 +103,28 @@ def list_all_sheets(archive):
         print 'You havent created any timesheet.'
 
 
-
-def check_in(archive, current_time=datetime.now()):
+@cli.command()
+def checkin(current_time=datetime.now()):
+    """Checking in"""
 
     res = session.query(Timesheet).filter(
-            datetime.now() - Timesheet.created_date < timedelta(days=1)).first()
+            Timesheet.created_date >= datetime.now() - timedelta(hours=12))\
+                    .order_by(Timesheet.id.desc()).first()
     if res:
         entry = session.query(Entry).filter(
-                datetime.now() - Entry.date < timedelta(days=1)).first()
+                Entry.date >= datetime.now() - timedelta(hours=12))\
+                .order_by(Entry.id.desc()).first()
 
+        #if checked in but havent checked out
         if entry and not entry.checkout_time:
             print 'You havent checked out from the last session. ' \
                     'I think this is a repeated action'
 
+        #update when there is check in and check out
         elif entry and entry.checkout_time:
             entry.checkin_time = current_time
 
+        #create an entry if havned checked in
         else:
             res.entries.append(Entry(checkin_time=current_time))
     else:
@@ -103,8 +135,9 @@ def check_in(archive, current_time=datetime.now()):
     session.commit()
 
 
-
-def check_out(current_time=datetime.now()):
+@cli.command()
+def checkout(current_time=datetime.now()):
+    """Checking out"""
     entry = session.query(Entry).filter(
             datetime.now() - Entry.date < timedelta(days=1)).first()
     if entry:

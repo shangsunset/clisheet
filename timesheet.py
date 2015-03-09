@@ -38,9 +38,9 @@ class Entry(Base):
     id = Column(Integer, primary_key=True)
     date = Column(DateTime, default=datetime.now)
     checkin_time = Column(DateTime)
-    checkout_time = Column(DateTime, nullable=True)
+    checkout_time = Column(DateTime, nullable=True, default='')
     task = Column(String, nullable=True)
-    hours = Column(Integer, nullable=True)
+    hours = Column(Integer, nullable=True, default=0)
     timesheet_id = Column(Integer, ForeignKey('timesheet.id'))
     timesheet = relationship('Timesheet', backref=backref('entries', order_by=id))
 
