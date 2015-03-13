@@ -22,9 +22,9 @@ class Timesheet(Base):
     __tablename__ = 'timesheet'
 
     id = Column(Integer, primary_key=True)
-    name = Column(String, default='untitled')
+    name = Column(String)
     created_date = Column(Date, nullable=False, default=date.today)
-    total_hours = Column(Integer, default=0)
+    total_hours = Column(Float, default=0.0)
 
     timesheet_archive_id = Column(Integer, ForeignKey('timesheet_archive.id'))
     timesheet_archive = relationship(
@@ -38,9 +38,9 @@ class Entry(Base):
     id = Column(Integer, primary_key=True)
     date = Column(Date, default=date.today)
     checkin_time = Column(DateTime)
-    checkout_time = Column(DateTime, nullable=True)
+    checkout_time = Column(DateTime)
     task = Column(String, nullable=True)
-    hours = Column(Integer, nullable=True, default=0)
+    hours = Column(Float, nullable=True, default=0.0)
     timesheet_id = Column(Integer, ForeignKey('timesheet.id'))
     timesheet = relationship('Timesheet', backref=backref('entries', order_by=id))
 
