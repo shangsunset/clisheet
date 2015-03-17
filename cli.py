@@ -1,5 +1,5 @@
 from __future__ import division
-import math
+import sys
 from decimal import getcontext
 from timesheet import TimesheetArchive, Timesheet, Entry
 import click
@@ -40,28 +40,36 @@ def show(id):
 
     if sheet:
         echo(click.style('This is the timesheet you requested.\n', fg='red'))
-        echo(click.style('---------------------------------------------------------------------------------------', fg='green'))
+        echo(click.style('-'*120, fg='green'))
         print
-        echo(click.style('Name : {:<20} Created Date: {:<20} Total Hours: {:<20}'.format(
+        echo(click.style('Name: {:<20} Created Date: {:<20} Total Hours: {:<20}'.format(
                 sheet.name, sheet.created_date.strftime('%m/%d/%y'),
                 str(sheet.total_hours)), fg='blue'))
         print
-        echo(click.style('---------------------------------------------------------------------------------------', fg='green'))
+        echo(click.style('-'*120, fg='green'))
         entries = session.query(Entry).filter(Entry.timesheet_id==sheet.id)
-        print '{:<20} {:<20} {:<20} {:<20}'.format('Date', 'Check In Time', 'Check Out Time', 'Hours')
+        print '{:<10} {:<15} {:<20} {:<20} {:<15} {:<20}'.format(
+                'ID', 'Date', 'Check In Time', 'Check Out Time', 'Hours', 'Task')
         print
 
         for entry in entries:
             if entry.checkout_time is None:
-                print '{:<20} {:<20} {:<20} {:<20}'.format(entry.date.strftime('%m/%d/%y'),
-                                                entry.checkin_time.strftime('%H:%M:%S'),
-                                                '--:--:--',
-                                                entry.hours)
+                print '{:<10} {:<15} {:<20} {:<20} {:<15} {:<10}\n'.format(
+                                str(entry.id),
+                                entry.date.strftime('%m/%d/%y'),
+                                entry.checkin_time.strftime('%H:%M:%S'),
+                                '--:--:--',
+                                entry.hours,
+                                '')
             else:
-                print '{:<20} {:<20} {:<20} {:<20}\n'.format(entry.date.strftime('%m/%d/%y'),
-                                                entry.checkin_time.strftime('%H:%M:%S'),
-                                                entry.checkout_time.strftime('%H:%M:%S'),
-                                                entry.hours)
+                print '{:<10} {:<15} {:<20} {:<20} {:<15} {:<10}\n'.format(
+                                str(entry.id),
+                                entry.date.strftime('%m/%d/%y'),
+                                entry.checkin_time.strftime('%H:%M:%S'),
+                                entry.checkout_time.strftime('%H:%M:%S'),
+                                entry.hours,
+                                entry.task)
+
     else:
         print 'The sheet you are looking for doesnt exist'
 
@@ -91,15 +99,15 @@ def ls():
     """List all the timesheets."""
     res = session.query(Timesheet).all()
     if res:
-        print '+---------------------------------------------------------------------------------------+'
+        print '+' + '-'*87 + '+'
         print '|\tID\t|\tSheet Name\t|\tCreated Date\t|\tTotal Hours\t|'
         for sheet in res:
-            print '+---------------------------------------------------------------------------------------+'
+            print '+' + '-'*87 + '+'
             print '|\t' + str(sheet.id) + '\t|\t' +  sheet.name + \
             '\t\t|\t' + sheet.created_date.strftime('%m/%d/%y') + '\t|\t' +\
             str(sheet.total_hours) + '\t\t|'
 
-        print '+---------------------------------------------------------------------------------------+'
+        print '+' + '-'*87 + '+'
     else:
         print 'You havent created any timesheet.'
 
@@ -108,9 +116,7 @@ def ls():
 def checkin(current_time=datetime.now()):
     """Checking in"""
 
-    res = session.query(Timesheet).filter(
-            Timesheet.created_date==date.today())\
-                    .order_by(Timesheet.id.desc()).first()
+    res = session.query(Timesheet).order_by(Timesheet.id.desc()).first()
     if res:
         entry = session.query(Entry).filter(
                 Entry.date == date.today())\
@@ -137,7 +143,8 @@ def checkin(current_time=datetime.now()):
 
 
 @cli.command()
-def checkout(current_time=datetime.now()):
+@click.option('--task', '-m', type=str)
+def checkout(task, current_time=datetime.now()):
     """Checking out"""
 
     res = session.query(Timesheet).filter(
@@ -153,6 +160,8 @@ def checkout(current_time=datetime.now()):
             duration = (entry.checkout_time - entry.checkin_time).seconds/(60*60)
             entry.hours = round(duration, 1)
             update_total_hours(res)
+            if task:
+                entry.task = task
 
         else:
             print 'You havent checked in yet son!'
@@ -168,6 +177,29 @@ def update_total_hours(sheet):
         sheet.total_hours += entry.hours
 
 
+@cli.command()
+@click.option('--sheet_id', '-s', type=int,
+        help='removes a sheet. take sheet id as parameter')
+@click.option('--entry_id', '-e', type=int,
+        help='removes entry. take entry id as parameter')
+def rm(sheet_id, entry_id):
+    """remove sheet or entry of your choice"""
+    if sheet_id:
+        res = session.query(Timesheet).get(sheet_id)
+
+    elif entry_id:
+        res = session.query(Entry).get(entry_id)
+
+    else:
+        print 'You didnt provide any option. usage: ts rm {-s} {-e} {id}'
+        sys.exit(0)
+
+    if not res:
+        echo('The ' + ('entry' if entry_id else 'timesheet') +\
+            ' you want to delete does not exist. Maybe you entered a wrong id number.')
+    else:
+        session.delete(res)
+    session.commit()
 
 
     # date = datetime.now().strftime("%m/%d/%y")
