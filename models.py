@@ -1,13 +1,12 @@
 import time
 from datetime import datetime, date
-from sqlalchemy import *
+from sqlalchemy import create_engine, Column, Integer,\
+        Float, Date, String, DateTime, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, backref
 
-
-engine = create_engine('sqlite:///timesheet.db', echo=True)
+engine = create_engine('sqlite:///timesheet.db')
 Base = declarative_base()
-
 
 class TimesheetArchive(Base):
 

@@ -38,8 +38,7 @@ def show(id):
         #lastest sheet
         sheet = session.query(Timesheet).order_by(Timesheet.id.desc()).first()
 
-    if sheet:
-        echo(click.style('This is the timesheet you requested.\n', fg='red'))
+    if sheet is not None:
         echo(click.style('-'*120, fg='green'))
         print
         echo(click.style('Name: {:<20} Created Date: {:<20} Total Hours: {:<20}'.format(
@@ -55,30 +54,18 @@ def show(id):
         for entry in entries:
             if entry.checkout_time is None:
                 print '{:<10} {:<15} {:<20} {:<20} {:<15} {:<10}\n'.format(
-                                str(entry.id),
-                                entry.date.strftime('%m/%d/%y'),
+                                str(entry.id), entry.date.strftime('%m/%d/%y'),
                                 entry.checkin_time.strftime('%H:%M:%S'),
-                                '--:--:--',
-                                entry.hours,
-                                '')
+                                '--:--:--', entry.hours, '')
             else:
                 print '{:<10} {:<15} {:<20} {:<20} {:<15} {:<10}\n'.format(
-                                str(entry.id),
-                                entry.date.strftime('%m/%d/%y'),
+                                str(entry.id), entry.date.strftime('%m/%d/%y'),
                                 entry.checkin_time.strftime('%H:%M:%S'),
                                 entry.checkout_time.strftime('%H:%M:%S'),
-                                entry.hours,
-                                entry.task)
+                                entry.hours, entry.task)
 
     else:
         print 'The sheet you are looking for doesnt exist'
-
-
-@event.listens_for(Timesheet, 'init')
-def update_name(target, args, kwargs):
-    session.add(target)
-    session.commit()
-    target.name = 'sheet#' + str(target.id)
 
 
 @cli.command()
@@ -117,7 +104,7 @@ def checkin(current_time=datetime.now()):
     """Checking in"""
 
     res = session.query(Timesheet).order_by(Timesheet.id.desc()).first()
-    if res:
+    if res is not None:
         entry = session.query(Entry).filter(
                 Entry.date == date.today())\
                 .order_by(Entry.id.desc()).first()
@@ -147,11 +134,9 @@ def checkin(current_time=datetime.now()):
 def checkout(task, current_time=datetime.now()):
     """Checking out"""
 
-    res = session.query(Timesheet).filter(
-            Timesheet.created_date==date.today())\
-                    .order_by(Timesheet.id.desc()).first()
+    res = session.query(Timesheet).order_by(Timesheet.id.desc()).first()
 
-    if res:
+    if res is not None:
         entry = session.query(Entry).filter(Entry.date == date.today())\
                 .order_by(Entry.id.desc()).first()
 
@@ -171,11 +156,6 @@ def checkout(task, current_time=datetime.now()):
     session.commit()
 
 
-def update_total_hours(sheet):
-    entries = session.query(Entry).filter(Entry.timesheet_id==sheet.id)
-    for entry in entries:
-        sheet.total_hours += entry.hours
-
 
 @cli.command()
 @click.option('--sheet_id', '-s', type=int,
@@ -184,10 +164,10 @@ def update_total_hours(sheet):
         help='removes entry. take entry id as parameter')
 def rm(sheet_id, entry_id):
     """remove sheet or entry of your choice"""
-    if sheet_id:
+    if sheet_id is not None:
         res = session.query(Timesheet).get(sheet_id)
 
-    elif entry_id:
+    elif entry_id is not None:
         res = session.query(Entry).get(entry_id)
 
     else:
@@ -202,13 +182,14 @@ def rm(sheet_id, entry_id):
     session.commit()
 
 
-    # date = datetime.now().strftime("%m/%d/%y")
-    #
-    # checkin_time = datetime.now().strftime("%H:%M:%S")
-    # time.sleep(3)
-    # checkout_time = datetime.now().strftime("%H:%M:%S")
-    #
-    # time_in = datetime.strptime(checkin_time, "%H:%M:%S")
-    # time_out = datetime.strptime(checkout_time, "%H:%M:%S")
-    # working_time = time_out - time_in
+def update_total_hours(sheet):
+    entries = session.query(Entry).filter(Entry.timesheet_id==sheet.id)
+    for entry in entries:
+        sheet.total_hours += entry.hours
 
+
+@event.listens_for(Timesheet, 'init')
+def update_name(target, args, kwargs):
+    session.add(target)
+    session.commit()
+    target.name = 'sheet#' + str(target.id)
