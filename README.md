@@ -1,1 +1,5 @@
-# timesheet
+# Timesheet
+
+##Install
+
+pip install --editable .
