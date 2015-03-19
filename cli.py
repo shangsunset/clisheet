@@ -1,7 +1,7 @@
 from __future__ import division
 import sys
 from decimal import getcontext
-from timesheet import TimesheetArchive, Timesheet, Entry
+from models import TimesheetArchive, Timesheet, Entry
 import click
 from click import echo
 from datetime import datetime, timedelta, date, time
