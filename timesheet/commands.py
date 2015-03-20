@@ -37,16 +37,17 @@ def show_sheet(id):
         sheet = session.query(Timesheet).order_by(Timesheet.id.desc()).first()
 
     if sheet is not None:
-        click.echo(click.style('-'*120, fg='green'))
+        # click.echo(click.style('-'*120, fg='green'))
         print
         click.echo(click.style('Name: {:<20} Created Date: {:<20} Total Hours: {:<20}'.format(
                 sheet.name, sheet.created_date.strftime('%m/%d/%y'),
                 str(sheet.total_hours)), fg='blue'))
         print
-        click.echo(click.style('-'*120, fg='green'))
+        # click.echo(click.style('-'*120, fg='green'))
         entries = session.query(Entry).filter(Entry.timesheet_id==sheet.id)
-        print '{:<10} {:<15} {:<20} {:<20} {:<15} {:<20}'.format(
-                'ID', 'Date', 'Check In Time', 'Check Out Time', 'Hours', 'Task')
+        click.echo(click.style('{:<10} {:<15} {:<20} {:<20} {:<15} {:<20}'.format(
+                'ID', 'Date', 'Check In Time', 'Check Out Time', 'Hours', 'Message'),
+                fg='green'))
         print
 
         for entry in entries:
@@ -112,9 +113,9 @@ def check_in(current_time=datetime.now()):
 
 def check_out(task, current_time=datetime.now()):
 
-    res = session.query(Timesheet).order_by(Timesheet.id.desc()).first()
+    sheet = session.query(Timesheet).order_by(Timesheet.id.desc()).first()
 
-    if res is not None:
+    if sheet is not None:
         entry = session.query(Entry).filter(Entry.date == date.today())\
                 .order_by(Entry.id.desc()).first()
 
@@ -122,8 +123,9 @@ def check_out(task, current_time=datetime.now()):
             entry.checkout_time = current_time
             duration = (entry.checkout_time - entry.checkin_time).seconds/(60*60)
             entry.hours = round(duration, 1)
-            update_total_hours(res)
-            if task:
+            sheet.total_hours += entry.hours
+
+            if task is not None:
                 entry.task = task
 
         else:
@@ -142,7 +144,7 @@ def delete(sheet_id, entry_id):
         res = session.query(Entry).get(entry_id)
 
     else:
-        print 'You didnt provide any option. usage: ts rm {-s} {-e} {id}'
+        print 'You didnt provide any option. usage: ts rm {-s} or {-e} {id}'
         sys.exit(0)
 
     if not res:
@@ -151,12 +153,6 @@ def delete(sheet_id, entry_id):
     else:
         session.delete(res)
     session.commit()
-
-
-def update_total_hours(sheet):
-    entries = session.query(Entry).filter(Entry.timesheet_id==sheet.id)
-    for entry in entries:
-        sheet.total_hours += entry.hours
 
 
 @event.listens_for(Timesheet, 'init')

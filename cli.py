@@ -37,11 +37,11 @@ def checkin():
 
 
 @cli.command()
-@click.option('--task', '-m', type=str)
-def checkout(task):
+@click.option('--message', '-m', type=str)
+def checkout(message):
     """Checking out"""
 
-    check_out(task)
+    check_out(message)
 
 
 
