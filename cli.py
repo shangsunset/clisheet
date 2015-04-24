@@ -1,6 +1,7 @@
 import click
 from timesheet.commands import create_new_sheet, show_sheet,\
         list_sheets, delete, check_in, check_out
+from timesheet.mail import sendmail
 
 
 @click.group()
@@ -53,3 +54,11 @@ def checkout(message):
 def rm(sheet_id, entry_id):
     """remove sheet or entry of your choice"""
     delete(sheet_id, entry_id)
+
+@cli.command()
+@click.option('--to', prompt='To')
+@click.option('--subject', prompt='Subect')
+@click.option('--message', prompt='Message')
+@click.option('--attchment', prompt='Attachment')
+def mail(to, subject, message, attchment):
+    sendmail(to, subject, message, attchment)

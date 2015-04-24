@@ -1,15 +1,12 @@
 from __future__ import division
 import sys
-from .models import TimesheetArchive, Timesheet, Entry
 import click
+from .models import TimesheetArchive, Timesheet, Entry
 from datetime import datetime, timedelta, date, time
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
+from timesheet import session
 
-engine = create_engine('sqlite:///timesheet.db')
-# create a Session
-Session = sessionmaker(bind=engine)
-session = Session()
 
 archive = session.query(TimesheetArchive).filter(TimesheetArchive.name=='archive').first()
 if not archive:
@@ -30,20 +27,18 @@ def create_new_sheet():
 
 def show_sheet(id):
 
-    if id:
+    if id is not None:
         sheet = session.query(Timesheet).get(id)
     else:
         #lastest sheet
         sheet = session.query(Timesheet).order_by(Timesheet.id.desc()).first()
 
     if sheet is not None:
-        # click.echo(click.style('-'*120, fg='green'))
         print
         click.echo(click.style('Name: {:<20} Created Date: {:<20} Total Hours: {:<20}'.format(
                 sheet.name, sheet.created_date.strftime('%m/%d/%y'),
                 str(sheet.total_hours)), fg='blue'))
         print
-        # click.echo(click.style('-'*120, fg='green'))
         entries = session.query(Entry).filter(Entry.timesheet_id==sheet.id)
         click.echo(click.style('{:<10} {:<15} {:<20} {:<20} {:<15} {:<20}'.format(
                 'ID', 'Date', 'Check In Time', 'Check Out Time', 'Hours', 'Message'),
@@ -61,7 +56,8 @@ def show_sheet(id):
                                 str(entry.id), entry.date.strftime('%m/%d/%y'),
                                 entry.checkin_time.strftime('%H:%M:%S'),
                                 entry.checkout_time.strftime('%H:%M:%S'),
-                                entry.hours, entry.task)
+                                entry.hours,
+                                (entry.task if entry.task is not None else ''))
 
     else:
         print 'The sheet you are looking for doesnt exist'
@@ -98,15 +94,15 @@ def check_in(current_time=datetime.now()):
 
         #create a new entry when there is already check in and check out made
         elif entry and entry.checkout_time:
-            res.entries.append(Entry(checkin_time=current_time))
+            res.entries.append(Entry(current_time))
 
         #create an entry if havned checked in
         else:
-            res.entries.append(Entry(checkin_time=current_time))
+            res.entries.append(Entry(current_time))
     else:
         sheet = Timesheet()
         archive.timesheets.append(sheet)
-        sheet.entries.append(Entry(checkin_time=current_time))
+        sheet.entries.append(Entry(current_time))
 
     session.commit()
 
@@ -119,10 +115,9 @@ def check_out(task, current_time=datetime.now()):
         entry = session.query(Entry).filter(Entry.date == date.today())\
                 .order_by(Entry.id.desc()).first()
 
-        if entry:
+        if entry is not None:
             entry.checkout_time = current_time
-            duration = (entry.checkout_time - entry.checkin_time).seconds/(60*60)
-            entry.hours = round(duration, 1)
+            entry.hours = entry.get_hour()
             sheet.total_hours += entry.hours
 
             if task is not None:

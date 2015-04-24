@@ -1,12 +1,13 @@
+from __future__ import division
 import time
+import sys
 from datetime import datetime, date
 from sqlalchemy import create_engine, Column, Integer,\
         Float, Date, String, DateTime, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, backref
+from timesheet import Base, engine
 
-engine = create_engine('sqlite:///timesheet.db')
-Base = declarative_base()
 
 class TimesheetArchive(Base):
 
@@ -43,5 +44,12 @@ class Entry(Base):
     timesheet_id = Column(Integer, ForeignKey('timesheet.id'))
     timesheet = relationship('Timesheet', backref=backref('entries', order_by=id))
 
+    def __init__(self, checkin_time):
+        self.checkin_time = checkin_time
+        self.checkout_time = None
+
+    def get_hour(self):
+        duration = (self.checkout_time - self.checkin_time).seconds/(60*60)
+        return round(duration, 1)
 
 Base.metadata.create_all(engine)
