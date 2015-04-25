@@ -25,6 +25,47 @@ def create_new_sheet():
         session.commit()
 
 
+def generate_attachment(id):
+    if id is not None:
+        sheet = session.query(Timesheet).get(id)
+
+        if sheet is not None:
+            entries = session.query(Entry).filter(Entry.timesheet_id==sheet.id)
+
+            attachment = 'timesheet.txt'
+            with open(attachment, 'w') as f:
+                f.write('Name: {:<20} Created Date: {:<20} Total Hours: {:<20}'.format(
+                        sheet.name, sheet.created_date.strftime('%m/%d/%y'),
+                        str(sheet.total_hours)))
+                f.write('\n')
+                f.write('\n')
+
+                f.write('{:<15} {:<20} {:<20} {:<15} {:<20}'.format(
+                    'Date', 'Check In Time', 'Check Out Time', 'Hours', 'Message'))
+                f.write('\n')
+                f.write('\n')
+
+                for entry in entries:
+                    f.write('{:<15} {:<20} {:<20} {:<15} {:<10}\n'.format(
+                                    entry.date.strftime('%m/%d/%y'),
+                                    entry.checkin_time.strftime('%H:%M:%S'),
+                                    entry.checkout_time.strftime('%H:%M:%S'),
+                                    entry.hours,
+                                    (entry.task if entry.task is not None else '')))
+
+            return attachment
+
+        else:
+            click.echo(click.style('The timesheet doesnt exist', fg='red'))
+
+    else:
+        click.echo(click.style('Timesheet ID is not specified.', fg='red'))
+        #lastest sheet
+        # sheet = session.query(Timesheet).order_by(Timesheet.id.desc()).first()
+
+
+
+
 def show_sheet(id):
 
     if id is not None:
@@ -155,3 +196,5 @@ def update_name(target, args, kwargs):
     session.add(target)
     session.commit()
     target.name = 'sheet#' + str(target.id)
+
+

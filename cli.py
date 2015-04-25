@@ -1,6 +1,6 @@
 import click
 from timesheet.commands import create_new_sheet, show_sheet,\
-        list_sheets, delete, check_in, check_out
+        list_sheets, delete, check_in, check_out, generate_attachment
 from timesheet.mail import sendmail
 
 
@@ -59,6 +59,7 @@ def rm(sheet_id, entry_id):
 @click.option('--to', prompt='To')
 @click.option('--subject', prompt='Subect')
 @click.option('--message', prompt='Message')
-@click.option('--attchment', prompt='Attachment')
-def mail(to, subject, message, attchment):
-    sendmail(to, subject, message, attchment)
+@click.option('--id', prompt='Attachment ID')
+def mail(to, subject, message, id):
+    attachment = generate_attachment(int(id))
+    sendmail(to, subject, message, attachment)

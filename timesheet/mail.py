@@ -6,10 +6,12 @@ from email.MIMEBase import MIMEBase
 from email.MIMEText import MIMEText
 from email import Encoders
 import os
+import click
 from config import gmail_user, gmail_pwd
 
 
-def sendmail(to, subject, text, attach=None):
+
+def sendmail(to, subject, text, attach):
     msg = MIMEMultipart()
 
     msg['From'] = gmail_user
@@ -29,8 +31,8 @@ def sendmail(to, subject, text, attach=None):
                     'attachment; filename="%s"' % os.path.basename(attach))
             msg.attach(part)
         except IOError:
-            print 'Error opening attachment file %s' % attach
-
+            click.echo(click.style('Error opening attachment file %s' % attach,
+                fg='red'))
     try:
         mailServer = smtplib.SMTP("smtp.gmail.com", 587)
         mailServer.ehlo()
@@ -39,9 +41,9 @@ def sendmail(to, subject, text, attach=None):
         mailServer.login(gmail_user, gmail_pwd)
         mailServer.sendmail(gmail_user, to, msg.as_string())
     except SMTPAuthenticationError:
-        print 'Login authentication failed.'
+        click.echo(click.style('Login authentication failed.', fg='red'))
     except SMTPException:
-        print 'Failed sending the email.'
+        click.echo(click.style('Failed sending the email.', fg='red'))
 
     mailServer.close()
 
