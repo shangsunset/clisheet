@@ -1,7 +1,8 @@
 import click
-from timesheet.commands import create_new_sheet, show_sheet,\
-        list_sheets, delete, check_in, check_out, generate_attachment
 from timesheet.mail import sendmail
+from timesheet.utils import create_new_sheet, show_sheet,\
+        list_sheets, delete, check_in, check_out,\
+        generate_attachment_txt, generate_attachment_excel
 
 
 @click.group()
@@ -20,7 +21,6 @@ def show(id):
 @cli.command()
 def new():
     """Add a new timesheet."""
-
     create_new_sheet()
 
 
@@ -33,7 +33,6 @@ def ls():
 @cli.command()
 def checkin():
     """Checking in"""
-
     check_in()
 
 
@@ -43,7 +42,6 @@ def checkout(message):
     """Checking out"""
 
     check_out(message)
-
 
 
 @cli.command()
@@ -61,5 +59,5 @@ def rm(sheet_id, entry_id):
 @click.option('--message', prompt='Message')
 @click.option('--id', prompt='Attachment ID')
 def mail(to, subject, message, id):
-    attachment = generate_attachment(int(id))
+    attachment = generate_attachment_excel(int(id))
     sendmail(to, subject, message, attachment)

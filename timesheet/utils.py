@@ -1,6 +1,7 @@
 from __future__ import division
 import sys
 import click
+import xlsxwriter
 from .models import TimesheetArchive, Timesheet, Entry
 from datetime import datetime, timedelta, date, time
 from sqlalchemy import create_engine, event
@@ -25,14 +26,14 @@ def create_new_sheet():
         session.commit()
 
 
-def generate_attachment(id):
+def generate_attachment_txt(id):
     if id is not None:
         sheet = session.query(Timesheet).get(id)
 
         if sheet is not None:
             entries = session.query(Entry).filter(Entry.timesheet_id==sheet.id)
 
-            attachment = 'timesheet.txt'
+            attachment = 'timesheet-' + str(id) + '.txt'
             with open(attachment, 'w') as f:
                 f.write('Name: {:<20} Created Date: {:<20} Total Hours: {:<20}'.format(
                         sheet.name, sheet.created_date.strftime('%m/%d/%y'),
@@ -41,7 +42,7 @@ def generate_attachment(id):
                 f.write('\n')
 
                 f.write('{:<15} {:<20} {:<20} {:<15} {:<20}'.format(
-                    'Date', 'Check In Time', 'Check Out Time', 'Hours', 'Message'))
+                    'Date', 'Check In Time', 'Check Out Time', 'Hour', 'Message'))
                 f.write('\n')
                 f.write('\n')
 
@@ -60,11 +61,54 @@ def generate_attachment(id):
 
     else:
         click.echo(click.style('Timesheet ID is not specified.', fg='red'))
-        #lastest sheet
-        # sheet = session.query(Timesheet).order_by(Timesheet.id.desc()).first()
 
 
+def generate_attachment_excel(id):
+    # Create a workbook and add a worksheet.
+    attachment = 'timesheet-' + str(id) + '.xlsx'
+    workbook = xlsxwriter.Workbook(attachment)
+    worksheet = workbook.add_worksheet()
 
+    # Add a bold format to use to highlight cells.
+    bold = workbook.add_format({'bold': 1})
+
+    # Add an Excel date format.
+    date_format = workbook.add_format({'num_format': 'mmmm d yyyy'})
+    time_formate = workbook.add_format({'num_format': 'hh:mm AM/PM'})
+
+    # Adjust the column width.
+    worksheet.set_column('E:E', 30)
+
+    # Write some data headers.
+    worksheet.write('A1', 'Date', bold)
+    worksheet.write('B1', 'Check In', bold)
+    worksheet.write('C1', 'Check Out', bold)
+    worksheet.write('D1', 'Hour', bold)
+    worksheet.write('E1', 'Message', bold)
+    worksheet.write('F1', 'Total Hours', bold)
+
+    # Start from the first cell below the headers.
+    row = 1
+    col = 0
+
+    if id is not None:
+        sheet = session.query(Timesheet).get(id)
+
+        if sheet is not None:
+            entries = session.query(Entry).filter(Entry.timesheet_id==sheet.id)
+            for entry in entries:
+                worksheet.write_string(row, col, entry.date.strftime('%m/%d/%y'))
+                worksheet.write_string(row, col + 1, entry.checkin_time.strftime('%H:%M:%S'))
+                worksheet.write_string(row, col + 2, entry.checkout_time.strftime('%H:%M:%S'))
+                worksheet.write_number  (row, col + 3, entry.hours)
+                worksheet.write_string(row, col + 4, (entry.task if entry.task is not None else ''))
+                row+=1
+
+            worksheet.write_number(1, 5, sheet.total_hours)
+
+    workbook.close()
+
+    return attachment
 
 def show_sheet(id):
 

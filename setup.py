@@ -7,6 +7,7 @@ setup(
         install_requires=[
             "click",
             "sqlalchemy",
+            "XlsxWriter"
             ],
         entry_points='''
             [console_scripts]
