@@ -52,4 +52,11 @@ class Entry(Base):
         duration = (self.checkout_time - self.checkin_time).seconds/(60*60)
         return round(duration, 1)
 
+class User(Base):
+    __tablename__ = 'user'
+
+    id = Column(Integer, primary_key=True)
+    email = Column(String, nullable=True)
+    password = Column(String, nullable=True)
+
 Base.metadata.create_all(engine)

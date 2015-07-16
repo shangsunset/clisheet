@@ -1,5 +1,7 @@
 *.db
 config.py
+*.cfg
+.pypirc
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

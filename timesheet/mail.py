@@ -5,16 +5,26 @@ from email.MIMEMultipart import MIMEMultipart
 from email.MIMEBase import MIMEBase
 from email.MIMEText import MIMEText
 from email import Encoders
+from .models import User
+from timesheet import session
 import os
+import getpass
 import click
-from config import gmail_user, gmail_pwd
-
 
 
 def sendmail(to, subject, text, attach):
-    msg = MIMEMultipart()
 
-    msg['From'] = gmail_user
+    user = session.query(User).first()
+    if user is None:
+        email = click.prompt('Please enter your email address', type=str)
+        pwd = getpass.getpass('Password:')
+        user = User(email=email, password=pwd)
+        session.add(user)
+        session.commit()
+
+
+    msg = MIMEMultipart()
+    msg['From'] = user.email
     msg['To'] = to
     msg['Subject'] = subject
 
@@ -38,15 +48,11 @@ def sendmail(to, subject, text, attach):
         mailServer.ehlo()
         mailServer.starttls()
         mailServer.ehlo()
-        mailServer.login(gmail_user, gmail_pwd)
-        mailServer.sendmail(gmail_user, to, msg.as_string())
-    except SMTPAuthenticationError:
-        click.echo(click.style('Login authentication failed.', fg='red'))
+        mailServer.login(user.email, user.password)
+        mailServer.sendmail(user.email, to, msg.as_string())
+        click.echo(click.style('email sent!', fg='yellow'))
     except SMTPException:
         click.echo(click.style('Failed sending the email.', fg='red'))
 
     mailServer.close()
 
-# sendmail("shangsunset@gmail.com",
-#         "hello",
-#         "its working")

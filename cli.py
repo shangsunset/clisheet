@@ -53,11 +53,13 @@ def rm(sheet_id, entry_id):
     """remove sheet or entry of your choice"""
     delete(sheet_id, entry_id)
 
+
 @cli.command()
 @click.option('--to', prompt='To')
 @click.option('--subject', prompt='Subect')
 @click.option('--message', prompt='Message')
 @click.option('--id', prompt='Attachment ID')
-def mail(to, subject, message, id):
+def email(to, subject, message, id):
     attachment = generate_attachment_excel(int(id))
     sendmail(to, subject, message, attachment)
+

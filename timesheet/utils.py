@@ -4,8 +4,7 @@ import click
 import xlsxwriter
 from .models import TimesheetArchive, Timesheet, Entry
 from datetime import datetime, timedelta, date, time
-from sqlalchemy import create_engine, event
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import event
 from timesheet import session
 
 
@@ -201,13 +200,15 @@ def check_out(task, current_time=datetime.now()):
                 .order_by(Entry.id.desc()).first()
 
         if entry is not None:
-            entry.checkout_time = current_time
-            entry.hours = entry.get_hour()
-            sheet.total_hours += entry.hours
+            if entry.checkout_time is None:
+                entry.checkout_time = current_time
+                entry.hours = entry.get_hour()
+                sheet.total_hours += entry.hours
 
             if task is not None:
                 entry.task = task
 
+            print sheet.total_hours
         else:
             print 'You havent checked in yet son!'
 
