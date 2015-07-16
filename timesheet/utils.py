@@ -6,7 +6,7 @@ import xlsxwriter
 from .models import TimesheetArchive, Timesheet, Entry
 from datetime import datetime, timedelta, date, time
 from sqlalchemy import event
-from timesheet import session
+from base import session
 
 
 archive = session.query(TimesheetArchive).filter(TimesheetArchive.name=='archive').first()

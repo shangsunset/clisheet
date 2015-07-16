@@ -6,7 +6,7 @@ from sqlalchemy import create_engine, Column, Integer,\
         Float, Date, String, DateTime, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, backref
-from timesheet import Base, engine
+from base import Base, engine
 
 
 class TimesheetArchive(Base):
@@ -59,4 +59,3 @@ class User(Base):
     email = Column(String, nullable=True)
     password = Column(String, nullable=True)
 
-Base.metadata.create_all(engine)

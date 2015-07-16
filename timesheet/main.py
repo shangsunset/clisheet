@@ -1,6 +1,6 @@
 import click
-from timesheet.mail import sendmail
-from timesheet.utils import create_new_sheet, show_sheet,\
+from .mail import sendmail
+from .utils import create_new_sheet, show_sheet,\
         list_sheets, delete, check_in, check_out,\
         generate_attachment_txt, generate_attachment_excel
 
