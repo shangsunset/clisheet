@@ -1,4 +1,5 @@
 from __future__ import division
+import os
 import sys
 import click
 import xlsxwriter
@@ -63,8 +64,13 @@ def generate_attachment_txt(id):
 
 
 def generate_attachment_excel(id):
+    try:
+        os.makedirs('./mytimesheets')
+    except OSError:
+        if not os.path.isdir('./mytimesheets'):
+            raise
     # Create a workbook and add a worksheet.
-    attachment = 'timesheet-' + str(id) + '.xlsx'
+    attachment = 'mytimesheets/timesheet-' + str(id) + '.xlsx'
     workbook = xlsxwriter.Workbook(attachment)
     worksheet = workbook.add_worksheet()
 
