@@ -6,7 +6,7 @@ from email.MIMEBase import MIMEBase
 from email.MIMEText import MIMEText
 from email import Encoders
 from .models import User
-from base import session
+from timesheet import session
 import os
 import getpass
 import click

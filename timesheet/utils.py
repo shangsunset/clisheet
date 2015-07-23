@@ -6,13 +6,7 @@ import xlsxwriter
 from .models import TimesheetArchive, Timesheet, Entry
 from datetime import datetime, timedelta, date, time
 from sqlalchemy import event
-from base import session
-
-
-archive = session.query(TimesheetArchive).filter(TimesheetArchive.name=='archive').first()
-if not archive:
-    archive = TimesheetArchive()
-    session.add(archive)
+from timesheet import session, archive
 
 
 def create_new_sheet():
@@ -104,7 +98,8 @@ def generate_attachment_excel(id):
             for entry in entries:
                 worksheet.write_string(row, col, entry.date.strftime('%m/%d/%y'))
                 worksheet.write_string(row, col + 1, entry.checkin_time.strftime('%H:%M:%S'))
-                worksheet.write_string(row, col + 2, entry.checkout_time.strftime('%H:%M:%S'))
+                if entry.checkout_time is not None:
+                    worksheet.write_string(row, col + 2, entry.checkout_time.strftime('%H:%M:%S'))
                 worksheet.write_number  (row, col + 3, entry.hours)
                 worksheet.write_string(row, col + 4, (entry.task if entry.task is not None else ''))
                 row+=1
