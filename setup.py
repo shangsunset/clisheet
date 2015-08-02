@@ -16,7 +16,7 @@ setup(
 
     # The project's main homepage.
     url='https://github.com/shangsunset/clisheet',
-    download_url = 'https://github.com/shangsunset/clisheet/tarball/0.1',
+    download_url = 'https://github.com/shangsunset/clisheet/tarball/0.0.4',
 
     # Author details
     author='Yeshen Shang',
