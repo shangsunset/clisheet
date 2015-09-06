@@ -1,15 +1,16 @@
 from __future__ import division
-import time
-import sys
-from datetime import datetime, date
+import os
+from datetime import date
 from sqlalchemy import create_engine, Column, Integer,\
-        Float, Date, String, DateTime, ForeignKey
+    Date, Float, String, DateTime, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import create_engine, event
 from sqlalchemy.orm import relationship, backref
 
-engine = create_engine('sqlite:///timesheet.db')
+
+db_path = os.path.abspath(os.path.dirname(__file__))
+engine = create_engine(db_path)
 Base = declarative_base()
+
 
 class TimesheetArchive(Base):
 
@@ -30,8 +31,8 @@ class Timesheet(Base):
 
     timesheet_archive_id = Column(Integer, ForeignKey('timesheet_archive.id'))
     timesheet_archive = relationship(
-            'TimesheetArchive',
-            backref=backref('timesheets', order_by=id))
+        'TimesheetArchive',
+        backref=backref('timesheets', order_by=id))
 
 
 class Entry(Base):
@@ -44,7 +45,8 @@ class Entry(Base):
     task = Column(String, nullable=True)
     hours = Column(Float, nullable=True, default=0.0)
     timesheet_id = Column(Integer, ForeignKey('timesheet.id'))
-    timesheet = relationship('Timesheet', backref=backref('entries', order_by=id))
+    timesheet = relationship('Timesheet',
+                             backref=backref('entries', order_by=id))
 
     def __init__(self, checkin_time):
         self.checkin_time = checkin_time
@@ -53,6 +55,7 @@ class Entry(Base):
     def get_hour(self):
         duration = (self.checkout_time - self.checkin_time).seconds/(60*60)
         return round(duration, 1)
+
 
 class User(Base):
     __tablename__ = 'user'
